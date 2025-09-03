@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pomodoro Timer - Day 3 Challenge</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --panel: #151515;
+      --card: #1e1e1e;
+      --soft: #2d2d2d;
+      --text: #f0f6fc;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --focus: #ff6b6b;
+      --break: #4ecdc4;
+      --complete: #3dd68c;
+      --ring: conic-gradient(var(--accent) 0%, var(--soft) 0%);
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background-image: 
+        radial-gradient(circle at 15% 50%, rgba(41, 125, 255, 0.1) 0%, transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(78, 205, 196, 0.1) 0%, transparent 25%);
+    }
+    .container {
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+      animation: fadeIn 0.8s ease-out;
+    }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      color: var(--accent);
+      text-decoration: none;
+      margin-bottom: 20px;
+      font-weight: 500;
+      transition: all 0.3s;
+      padding: 8px 16px;
+      border-radius: 50px;
+      background: rgba(88, 166, 255, 0.1);
+    }
+    .back-link:hover {
+      background: rgba(88, 166, 255, 0.2);
+      transform: translateY(-2px);
+    }
+    .back-link i {
+      margin-right: 8px;
+    }
+    .header h1 {
+      color: var(--text);
+      font-size: 2.8rem;
+      margin-bottom: 12px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--break) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header p {
+      color: var(--muted);
+      max-width: 600px;
+      margin: 0 auto;
+      font-size: 1.1rem;
+    }
+    
+    /* Main Content */
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+    }
+    @media (max-width: 768px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    /* Timer Section */
+    .timer-section {
+      background: var(--panel);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .timer-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 5px;
+      background: linear-gradient(90deg, var(--focus), var(--break));
+    }
+    
+    /* Progress Ring */
+    .progress-ring {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      margin: 20px 0 30px;
+    }
+    .ring-bg {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: var(--soft);
+      box-shadow: inset 0 0 0 15px rgba(255, 255, 255, 0.05);
+    }
+    .progress-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      clip-path: polygon(50% 50%, 50% 0, 0 0, 0 50%);
+      background: var(--ring);
+      transition: background 0.5s;
+    }
+    .progress-content {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: var(--card);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    .time-left {
+      font-size: 3.5rem;
+      font-weight: 700;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      margin-bottom: 5px;
+      text-shadow: 0 2px 10px rgba(88, 166, 255, 0.3);
+    }
+    .session-type {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 15px;
+    }
+    .session-type.focus {
+      color: var(--focus);
+    }
+    .session-type.break {
+      color: var(--break);
+    }
+    
+    /* Controls */
+    .timer-controls {
+      display: flex;
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .timer-btn {
+      padding: 14px 28px;
+      border: none;
+      border-radius: 50px;
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+    .timer-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+    .timer-btn:not(:disabled):hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+    }
+    .start-btn {
+      background: var(--complete);
+      color: #0a2e1f;
+    }
+    .pause-btn {
+      background: var(--accent);
+      color: white;
+    }
+    .reset-btn {
+      background: var(--soft);
+      color: var(--text);
+    }
+    
+    /* Settings Panel */
+    .settings-panel {
+      background: var(--panel);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    .panel-title {
+      color: var(--text);
+      font-size: 1.5rem;
+      margin-bottom: 25px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .panel-title i {
+      color: var(--accent);
+    }
+    
+    /* Settings */
+    .settings-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    .setting-group {
+      background: var(--card);
+      padding: 20px;
+      border-radius: 15px;
+    }
+    .setting-title {
+      color: var(--text);
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .setting-title i {
+      color: var(--accent);
+    }
+    .time-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    .time-input {
+      display: flex;
+      flex-direction: column;
+    }
+    .time-input label {
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+    }
+    .time-input input {
+      padding: 12px 15px;
+      border-radius: 10px;
+      border: 2px solid var(--soft);
+      background: var(--panel);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 1.1rem;
+      transition: all 0.3s;
+    }
+    .time-input input:focus {
+      border-color: var(--accent);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+    }
+    
+    /* Session Selector */
+    .session-selector {
+      display: flex;
+      background: var(--soft);
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 15px;
+    }
+    .session-option {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: 600;
+    }
+    .session-option.active {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 4px 10px rgba(88, 166, 255, 0.3);
+    }
+    
+    /* Stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .stat-card {
+      background: var(--card);
+      padding: 20px;
+      border-radius: 15px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 5px;
+    }
+    .stat-label {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    
+    /* Footer */
+    .footer {
+      text-align: center;
+      margin-top: 50px;
+      color: var(--muted);
+      animation: fadeIn 1s ease-out;
+    }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 25px;
+      margin: 20px 0;
+    }
+    .footer-link {
+      color: var(--muted);
+      text-decoration: none;
+      transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 50px;
+      background: rgba(139, 148, 158, 0.1);
+    }
+    .footer-link:hover {
+      color: var(--accent);
+      background: rgba(88, 166, 255, 0.1);
+      transform: translateY(-2px);
+    }
+    
+    /* Animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+    
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+    
+    /* Notification */
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      border-radius: 10px;
+      background: var(--card);
+      color: var(--text);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transform: translateX(100%);
+      transition: transform 0.5s;
+      z-index: 1000;
+    }
+    .notification.show {
+      transform: translateX(0);
+    }
+    .notification i {
+      font-size: 1.2rem;
+    }
+    .notification.focus {
+      border-left: 4px solid var(--focus);
+    }
+    .notification.break {
+      border-left: 4px solid var(--break);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <a href="index.html" class="back-link">
+        <i class="fas fa-arrow-left"></i> Back to Blog
+      </a>
+      <h1>Pomodoro Timer</h1>
+      <p>Day 3 of my 30-Day Coding Challenge - Boost your productivity with focused work sessions</p>
+    </header>
+
+    <div class="main-content">
+      <!-- Timer Section -->
+      <div class="timer-section">
+        <div class="progress-ring">
+          <div class="ring-bg"></div>
+          <div class="progress-fill" id="progressFill"></div>
+          <div class="progress-content">
+            <div class="time-left" id="timeLeft">25:00</div>
+            <div class="session-type focus" id="sessionType">Focus Time</div>
+            <div id="nextSession">Next: 5 min break</div>
+          </div>
+        </div>
+
+        <div class="timer-controls">
+          <button class="timer-btn start-btn" id="startBtn">
+            <i class="fas fa-play"></i> Start
+          </button>
+          <button class="timer-btn pause-btn" id="pauseBtn" disabled>
+            <i class="fas fa-pause"></i> Pause
+          </button>
+          <button class="timer-btn reset-btn" id="resetBtn" disabled>
+            <i class="fas fa-redo"></i> Reset
+          </button>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="completedSessions">0</div>
+            <div class="stat-label">Sessions Completed</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="totalFocusTime">0</div>
+            <div class="stat-label">Minutes Focused</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Panel -->
+      <div class="settings-panel">
+        <h2 class="panel-title"><i class="fas fa-cog"></i> Timer Settings</h2>
+        
+        <div class="settings-grid">
+          <div class="setting-group">
+            <h3 class="setting-title"><i class="fas fa-clock"></i> Time Settings</h3>
+            <div class="time-inputs">
+              <div class="time-input">
+                <label for="focusTime">Focus Time (min)</label>
+                <input type="number" id="focusTime" min="1" max="60" value="25">
+              </div>
+              <div class="time-input">
+                <label for="breakTime">Break Time (min)</label>
+                <input type="number" id="breakTime" min="1" max="30" value="5">
+              </div>
+            </div>
+          </div>
+
+          <div class="setting-group">
+            <h3 class="setting-title"><i class="fas fa-sync-alt"></i> Session Type</h3>
+            <div class="session-selector">
+              <div class="session-option active" data-type="focus">Focus</div>
+              <div class="session-option" data-type="break">Break</div>
+            </div>
+            <p class="setting-desc">Select which session to start with</p>
+          </div>
+
+          <div class="setting-group">
+            <h3 class="setting-title"><i class="fas fa-chart-line"></i> Today's Progress</h3>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-value" id="dailySessions">0/8</div>
+                <div class="stat-label">Daily Goal</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-value" id="dailyFocus">0/200</div>
+                <div class="stat-label">Focus Minutes</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="#" class="footer-link">
+          <i class="fab fa-github"></i> GitHub
+        </a>
+        <a href="#" class="footer-link">
+          <i class="fab fa-linkedin"></i> LinkedIn
+        </a>
+        <a href="#" class="footer-link">
+          <i class="fas fa-envelope"></i> Contact
+        </a>
+      </div>
+      <p>© 2023 Aryan Sunil | Day 3 of 30-Day Coding Challenge</p>
+    </footer>
+  </div>
+
+  <!-- Notification -->
+  <div class="notification" id="notification">
+    <i class="fas fa-bell"></i>
+    <span id="notificationText">Session completed!</span>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // DOM Elements
+      const timeLeft = document.getElementById('timeLeft');
+      const sessionType = document.getElementById('sessionType');
+      const nextSession = document.getElementById('nextSession');
+      const progressFill = document.getElementById('progressFill');
+      const startBtn = document.getElementById('startBtn');
+      const pauseBtn = document.getElementById('pauseBtn');
+      const resetBtn = document.getElementById('resetBtn');
+      const focusTimeInput = document.getElementById('focusTime');
+      const breakTimeInput = document.getElementById('breakTime');
+      const sessionOptions = document.querySelectorAll('.session-option');
+      const completedSessions = document.getElementById('completedSessions');
+      const totalFocusTime = document.getElementById('totalFocusTime');
+      const dailySessions = document.getElementById('dailySessions');
+      const dailyFocus = document.getElementById('dailyFocus');
+      const notification = document.getElementById('notification');
+      const notificationText = document.getElementById('notificationText');
+      
+      // Timer variables
+      let countdown;
+      let isRunning = false;
+      let isPaused = false;
+      let currentSessionType = 'focus'; // 'focus' or 'break'
+      let secondsLeft = 25 * 60; // 25 minutes in seconds
+      let totalSeconds = 25 * 60;
+      let sessionsCompleted = 0;
+      let minutesFocused = 0;
+      let dailyGoal = 0;
+      
+      // Update progress circle
+      function updateProgressCircle() {
+        const percentage = ((totalSeconds - secondsLeft) / totalSeconds) * 100;
+        progressFill.style.background = `conic-gradient(var(--accent) ${percentage}%, var(--soft) ${percentage}%)`;
+      }
+      
+      // Format time for display
+      function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      }
+      
+      // Update timer display
+      function updateDisplay() {
+        timeLeft.textContent = formatTime(secondsLeft);
+        
+        // Update session type class for color
+        if (currentSessionType === 'focus') {
+          sessionType.textContent = 'Focus Time';
+          sessionType.className = 'session-type focus';
+          nextSession.textContent = `Next: ${breakTimeInput.value} min break`;
+        } else {
+          sessionType.textContent = 'Break Time';
+          sessionType.className = 'session-type break';
+          nextSession.textContent = `Next: ${focusTimeInput.value} min focus`;
+        }
+        
+        // Update progress circle
+        updateProgressCircle();
+        
+        // Update daily stats
+        dailySessions.textContent = `${sessionsCompleted}/8`;
+        dailyFocus.textContent = `${minutesFocused}/200`;
+      }
+      
+      // Show notification
+      function showNotification(message, type) {
+        notificationText.textContent = message;
+        notification.className = `notification show ${type}`;
+        
+        setTimeout(() => {
+          notification.className = 'notification';
+        }, 3000);
+      }
+      
+      // Start timer
+      function startTimer() {
+        if (isRunning && !isPaused) return;
+        
+        isRunning = true;
+        isPaused = false;
+        startBtn.disabled = true;
+        pauseBtn.disabled = false;
+        resetBtn.disabled = false;
+        focusTimeInput.disabled = true;
+        breakTimeInput.disabled = true;
+        
+        // Disable session type buttons during timer
+        sessionOptions.forEach(option => option.style.pointerEvents = 'none');
+        
+        const startTime = Date.now();
+        const expectedEndTime = startTime + (secondsLeft * 1000);
+        
+        if (countdown) clearInterval(countdown);
+        
+        countdown = setInterval(() => {
+          const now = Date.now();
+          const timeRemaining = Math.max(0, expectedEndTime - now);
+          secondsLeft = Math.ceil(timeRemaining / 1000);
+          
+          updateDisplay();
+          
+          if (secondsLeft === 0) {
+            clearInterval(countdown);
+            timerComplete();
+          }
+        }, 100);
+      }
+      
+      // Pause timer
+      function pauseTimer() {
+        if (!isRunning) return;
+        
+        clearInterval(countdown);
+        isRunning = false;
+        isPaused = true;
+        startBtn.disabled = false;
+        pauseBtn.disabled = true;
+        startBtn.innerHTML = '<i class="fas fa-play"></i> Resume';
+      }
+      
+      // Reset timer
+      function resetTimer() {
+        clearInterval(countdown);
+        isRunning = false;
+        isPaused = false;
+        
+        // Reset to current session type's time
+        if (currentSessionType === 'focus') {
+          secondsLeft = parseInt(focusTimeInput.value) * 60;
+          totalSeconds = secondsLeft;
+        } else {
+          secondsLeft = parseInt(breakTimeInput.value) * 60;
+          totalSeconds = secondsLeft;
+        }
+        
+        startBtn.disabled = false;
+        pauseBtn.disabled = true;
+        resetBtn.disabled = true;
+        focusTimeInput.disabled = false;
+        breakTimeInput.disabled = false;
+        
+        // Re-enable session type buttons
+        sessionOptions.forEach(option => option.style.pointerEvents = 'auto');
+        
+        startBtn.innerHTML = '<i class="fas fa-play"></i> Start';
+        updateDisplay();
+      }
+      
+      // When timer completes
+      function timerComplete() {
+        isRunning = false;
+        
+        // Play sound
+        const audio = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU');
+        audio.play().catch(e => console.log('Audio play failed:', e));
+        
+        if (currentSessionType === 'focus') {
+          sessionsCompleted++;
+          minutesFocused += parseInt(focusTimeInput.value);
+          completedSessions.textContent = sessionsCompleted;
+          totalFocusTime.textContent = minutesFocused;
+          
+          // Show notification
+          showNotification('Focus session complete! Time for a break.', 'focus');
+          
+          // Switch to break
+          currentSessionType = 'break';
+          secondsLeft = parseInt(breakTimeInput.value) * 60;
+        } else {
+          // Show notification
+          showNotification('Break is over! Time to focus.', 'break');
+          
+          // Switch to focus
+          currentSessionType = 'focus';
+          secondsLeft = parseInt(focusTimeInput.value) * 60;
+        }
+        
+        totalSeconds = secondsLeft;
+        
+        // Update active session button
+        sessionOptions.forEach(option => {
+          if (option.dataset.type === currentSessionType) {
+            option.classList.add('active');
+          } else {
+            option.classList.remove('active');
+          }
+        });
+        
+        // Update UI
+        updateDisplay();
+        
+        // Auto-start next session
+        startTimer();
+      }
+      
+      // Change session type
+      function setSessionType(type) {
+        if (isRunning) return;
+        
+        currentSessionType = type;
+        
+        // Update active button
+        sessionOptions.forEach(option => {
+          if (option.dataset.type === type) {
+            option.classList.add('active');
+          } else {
+            option.classList.remove('active');
+          }
+        });
+        
+        // Set time based on session type
+        if (type === 'focus') {
+          secondsLeft = parseInt(focusTimeInput.value) * 60;
+        } else {
+          secondsLeft = parseInt(breakTimeInput.value) * 60;
+        }
+        
+        totalSeconds = secondsLeft;
+        updateDisplay();
+      }
+      
+      // Event Listeners
+      startBtn.addEventListener('click', startTimer);
+      pauseBtn.addEventListener('click', pauseTimer);
+      resetBtn.addEventListener('click', resetTimer);
+      
+      focusTimeInput.addEventListener('change', () => {
+        if (currentSessionType === 'focus' && !isRunning) {
+          secondsLeft = parseInt(focusTimeInput.value) * 60;
+          totalSeconds = secondsLeft;
+          updateDisplay();
+        }
+      });
+      
+      breakTimeInput.addEventListener('change', () => {
+        if (currentSessionType === 'break' && !isRunning) {
+          secondsLeft = parseInt(breakTimeInput.value) * 60;
+          totalSeconds = secondsLeft;
+          updateDisplay();
+        }
+      });
+      
+      sessionOptions.forEach(option => {
+        option.addEventListener('click', () => {
+          setSessionType(option.dataset.type);
+        });
+      });
+      
+      // Initialize display
+      updateDisplay();
+    });
+  </script>
+</body>
+</html>
